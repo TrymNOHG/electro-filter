@@ -4,7 +4,7 @@ This repository contains a Python script that solves the incompressible Navier-S
 1. Mesh Creation
 2. Explores Function Spaces
 3. Boundary Conditions
-4. Weak Formulation using mixed FEM
+4. Weak Formulation using mixed FEM 
 5. Solver The system is solved using FEniCS's
 6. Visualization plotted using `matplotlib`.
 
