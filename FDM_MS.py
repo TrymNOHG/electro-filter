@@ -53,6 +53,8 @@ def matrix_coeffs(model, params):
 
     return δ, γ, ξ, 𝜗, ω
 
+
+
 def S(M, r, z, t, params):
     R, L, E, U, D = params
     
@@ -64,7 +66,6 @@ def S(M, r, z, t, params):
     return (term_time + term_diff + term_radial + term_conv) * np.exp(-t)
 
 def coeff_matrix_ms(M:int, coeffs) -> sp.csr_matrix:
-   
     δ, γ, ξ, 𝜗, ω = coeffs
     Z = (M-1)**2
 
@@ -74,7 +75,7 @@ def coeff_matrix_ms(M:int, coeffs) -> sp.csr_matrix:
     u = np.full(Z, γ)                    # Next highest diag
     uu = np.full(Z, δ)                   # Highest diag
     
-    l[M-2::M-1], u[M-2::M-1] = 0, 0 # Every M'th element is zero in l and d
+    l[M-2::M-1], u[M-2::M-1] = 0, 0 # Every M-1'th element is zero in l and d
     
     A = sp.diags([ll, l, -d, u, uu], [-(M-1), -1, 0, 1, (M-1)], (Z, Z), format='csr')
 
@@ -95,7 +96,6 @@ def boundary_vector_ms(M, model:tuple, coeffs, k:int, Ck:np.ndarray, BC:tuple) -
   return G[::-1].ravel() # return G as a vector
 
 def concentration_scheme_ms(M, model, params, A:np.ndarray, g:np.ndarray, k:int, Ck:np.ndarray, BC:tuple, S) -> np.ndarray:
-   
     (h, ht), (z, r, t), (ZZ, RR) = model
     g1, g2, g3, g4 = BC
    
@@ -109,6 +109,7 @@ def concentration_scheme_ms(M, model, params, A:np.ndarray, g:np.ndarray, k:int,
     C[1:-1, 1:-1] = np.reshape(C_interior, (M-1, M-1))
    
     return C
+
 
 # Initial condition
 def f_ms(r, z):                   
@@ -131,14 +132,11 @@ def c_exact(r, z, t):
     return np.sin(np.pi*r)*np.cos(np.pi*z)*np.exp(-t)
 
 
-
-
 def spatial_converge(params, M_list, K):
     R, L, E, U, D = params
-
     BC = (i_ms, e_ms, d_ms, o_ms)
 
-    errors_L2 = np.zeros(len(M_list))
+    errors_Linf , errors_L2 = np.zeros(len(M_list)), np.zeros(len(M_list))
     H = np.zeros(len(M_list))
     ht = 1/K
     for j, M in enumerate(M_list):
@@ -153,23 +151,23 @@ def spatial_converge(params, M_list, K):
             g = boundary_vector_ms(M, (z, r, t), coeffs, k, Ck, BC)
             Ck = concentration_scheme_ms(M, ((h, ht), (z, r, t), (ZZ, RR)), (R, L, E, U, D), A, g, k, Ck, BC, S)
 
-        C_exact = c_exact(RR, ZZ, t[-1])
+        C_exact = c_exact(RR, ZZ, 1)
         error = C_exact - Ck
 
-        errors_L2[j] = np.sqrt(np.sum(error**2) * h**2)
+        errors_Linf[j] = np.linalg.norm(error, ord=np.inf)
+        errors_L2[j] = np.sqrt(h) * np.linalg.norm(error, ord='fro')
         H[j] = h
 
-    p = np.polyfit(np.log(H), np.log(errors_L2), 1)[0]
+    p_Linf = np.polyfit(np.log(H), np.log(errors_Linf), 1)[0]
+    p_L2 = np.polyfit(np.log(H), np.log(errors_L2), 1)[0]
 
-    return H, errors_L2, p
-
+    return H, errors_Linf, errors_L2, p_Linf, p_L2
 
 def temporal_converge(params, K_list, M):
     R, L, E, U, D = params
-
     BC = (i_ms, e_ms, d_ms, o_ms)
 
-    errors_L2 = np.zeros(len(K_list))
+    errors_Linf , errors_L2 = np.zeros(len(K_list)), np.zeros(len(K_list))
     Ht = np.zeros(len(K_list))
     h = 1/M
     for j, K in enumerate(K_list):
@@ -184,33 +182,51 @@ def temporal_converge(params, K_list, M):
             g = boundary_vector_ms(M, (z, r, t), coeffs, k, Ck, BC)
             Ck = concentration_scheme_ms(M, ((h, ht), (z, r, t), (ZZ, RR)), (R, L, E, U, D), A, g, k, Ck, BC, S)
 
-        C_exact = c_exact(RR, ZZ, t[-1])
+        C_exact = c_exact(RR, ZZ, 1)
         error = C_exact - Ck
 
-        errors_L2[j] = np.sqrt(np.sum(error**2) * h**2)
+        errors_Linf[j] = np.linalg.norm(error, ord=np.inf)
+        errors_L2[j] = np.sqrt(h) * np.linalg.norm(error, ord='fro')
         Ht[j] = ht
         
 
-    p = np.polyfit(np.log(Ht), np.log(errors_L2), 1)[0]
+    p_Linf = np.polyfit(np.log(Ht), np.log(errors_Linf), 1)[0]
+    p_L2 = np.polyfit(np.log(Ht), np.log(errors_L2), 1)[0]
 
-    return Ht, errors_L2, p
+    return Ht, errors_Linf, errors_L2, p_Linf, p_L2
+
+def plot_convergence(converge_func, params, resolution_list, fixed_resolution):
+    # Call the appropriate convergence function
+    H, errors_Linf, errors_L2, p_Linf, p_L2 = converge_func(params, resolution_list, fixed_resolution)
+
+    # Determine label base depending on which convergence function is being used
+    label_base = "h" if converge_func.__name__ == 'spatial_converge' else 'h_t'
+
+    plt.loglog(H, errors_Linf, 'o-', c='#1B4F72', label=f'$p^{{L_\\infty}}_{{{label_base}}} = {p_Linf:.2f}$')
+    plt.loglog(H, errors_L2, 'o-', c='#8B3A3A', label=f'$p^{{L_2}}_{{{label_base}}} = {p_L2:.2f}$')
+    plt.xlabel(f'${label_base}$')
+    plt.ylabel(f'$||e({label_base})||$')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 
+# Example 1: Naive parameters, naive grid refinements
+R, L, E, U, D = 0.1, 1, 3, 4, 1
 
-R, L, E, U, D = 0.1, 1, 2, 4, 1.5           ## ENDRE TIL OPTIMERTE VERDIER ##
+plot_convergence(spatial_converge, (R, L, E, U, D), [50, 100, 200, 400], 400)
+plot_convergence(temporal_converge, (R, L, E, U, D), [50, 100, 200, 400], 400)
 
-H, errors_h, p_h = spatial_converge((R, L, E, U, D), (200, 400, 800, 1600, 3200), 4000)
-plt.loglog(H, errors_h, 'o-', c='#1B4F72', label=f'$K = 4000, p_h = {p_h:.2f}$')
-plt.xlabel('$h$')
-plt.ylabel('$||e(h)||_2$')
-plt.legend()
-plt.grid(True)
-plt.show()
+# Example 2: Optimized parameters, naive grid refinements
+R, L, E, U, D = 3, 2, 9, 20, 0.0125 ## FIND PARAMETERS ##
+plot_convergence(spatial_converge, (R, L, E, U, D), [50, 100, 200, 400], 400)
 
+R, L, E, U, D = 3, 2, 9, 20, 0.0125 ## FIND PARAMETERS ##
+plot_convergence(temporal_converge, (R, L, E, U, D), [50, 100, 200, 400], 400)
 
-Ht, errors_ht, p_ht = temporal_converge((R, L, E, U, D), (200, 400, 800, 1600, 3200), 4000)
-plt.loglog(Ht, errors_ht, 'o-', c='#8B3A3A', label=f'$M = 4000, p_{{h_t}} = {p_ht:.2f}$')
-plt.ylabel('$||e(h_t)||_2$')
-plt.legend()
-plt.grid(True)
-plt.show()
+# Example 3: Optimized parameters, better grid refinements
+R, L, E, U, D = 0.1, 1, 3, 4, 1 ## FIND PARAMETERS ##
+plot_convergence(spatial_converge, (R, L, E, U, D), [200, 400, 800, 1600, 3200], 4000)
+
+R, L, E, U, D = 0.1, 1, 3, 4, 1 ## FIND PARAMETERS ##
+plot_convergence(temporal_converge, (R, L, E, U, D), [200, 400, 800, 1600, 3200], 4000)
