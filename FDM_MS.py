@@ -200,7 +200,7 @@ def temporal_converge(params, K_list, M):
 R, L, E, U, D = 0.1, 1, 2, 4, 1.5           ## ENDRE TIL OPTIMERTE VERDIER ##
 
 H, errors_h, p_h = spatial_converge((R, L, E, U, D), (200, 400, 800, 1600, 3200), 4000)
-plt.loglog(H, errors_h, 'o-', c='#1B4F72', label=f'$K = 50, p_h = {p_h:.2f}$')
+plt.loglog(H, errors_h, 'o-', c='#1B4F72', label=f'$K = 4000, p_h = {p_h:.2f}$')
 plt.xlabel('$h$')
 plt.ylabel('$||e(h)||_\infty$')
 plt.legend()
@@ -209,7 +209,7 @@ plt.show()
 
 
 Ht, errors_ht, p_ht = temporal_converge((R, L, E, U, D), (200, 400, 800, 1600, 3200), 4000)
-plt.loglog(Ht, errors_ht, 'o-', c='#8B3A3A', label=f'$M = 200, p_{{h_t}} = {p_ht:.2f}$')
+plt.loglog(Ht, errors_ht, 'o-', c='#8B3A3A', label=f'$M = 4000, p_{{h_t}} = {p_ht:.2f}$')
 plt.ylabel('$||e(h_t)||_\infty$')
 plt.legend()
 plt.grid(True)
