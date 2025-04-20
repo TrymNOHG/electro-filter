@@ -35,6 +35,9 @@ import math
 import uuid
 from copy import deepcopy
 
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
 from fds import simulate_concentration
 
 # Problem-specific constraints
@@ -173,7 +176,25 @@ class History:
         self.gen_hist.append(pop.get_stats())
     
     def plot_data(self):
-        pass
+        individ_data = self.individual_hist.values()
+        generation_vals = [data[2] for data in individ_data]
+        fitness_data = np.array([data[1] for data in individ_data]) 
+        plt.figure(figsize=(8, 6))
+        cmap = plt.get_cmap('tab10')  # Or 'tab20', 'Set3', etc
+        colors = [cmap(i % cmap.N) for i in generation_vals] 
+        plt.figure(figsize=(8, 6))
+        plt.scatter(fitness_data[:, 0], fitness_data[:, 1], c=colors)
+        plt.xlabel('Variance Objective')
+        plt.ylabel('Sum Deposition Objective')
+        plt.title('NSGA-2 Population Development')
+        plt.grid(True)
+
+        for gen_val in np.unique(generation_vals):
+            plt.scatter([], [], c=[cmap(i % cmap.N)], label=f"Gen. {gen_val}")
+        plt.legend(title='Generation Number', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        plt.tight_layout()
+        plt.savefig("./history.png")
 
 
 def init_individual():
@@ -336,7 +357,7 @@ if __name__ == "__main__":
     pop = Population(init_population(15)) # Initialization
     hist.add_gen_data(pop)
     non_dom_sort(pop)
-    NUM_GENERATIONS = 5
+    NUM_GENERATIONS = 2
     for i in range(NUM_GENERATIONS):
         parents = tournament_selection(pop.population) # Parent Selection
         offspring = recombination(parents) # Offspring
@@ -355,6 +376,7 @@ if __name__ == "__main__":
         print(pop.get_stats())
         hist.add_gen_data(pop)
 
+    hist.plot_data()
 
-
-# Two things left: 1. Fix the elitism problem. 2. Integrate variable bounds into the mutation step.
+# Two things left: 1. Integrate variable bounds into the mutation step. 2. Add a plot of the history and such.
+# Discourage variable bound violations through objective penalty.
