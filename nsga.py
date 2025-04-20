@@ -1,34 +1,3 @@
-"""
-    In this MOOP, the phenotype is the water filtration simulation. The genotype will be the encoding of the 4 parameters: E, U, C, and kA.
-    Is there a way to enforce some constraints on the real value range of the four variables in the actual representation.
-
-    Representation notes:
-    For real-value (or floating-point value) representations, each "parameter" has a defined interval with a lower and upperbound from which the values may vary. 
-    Here, it is wise to use the same bounds as those in the weighted sum method optimization.
-
-    There are generally two types of mutations associated with real-value representations: uniform mutation and non-uniform mutation. 
-    
-    In uniform mutation, there is an equal chance of sampling a floating point value from within the bounds; this is generally accompanied by point-wise mutations. 
-    In non-uniform mutations, a sample is made from a gaussian distribution with mean zero and an std chosen by the user, which is then added to the given value. The std in this case
-    is often called the mutation step size, since it affects how far a potential mutation jump may be statistically be. 
-        Self-adaptation may be utilized in this case to determine the mutation step size. Essentially, the step size will be encoded and evolved as well.
-        For this to work, the std needs to be mutated and then applied to the individual. (This is talked about more in chapter 8 of the Evolutionary Algorithms textbook under
-        the hyperparameter control sections)
-        Start with uncorrelated mutations.
-    
-    Therefore, genotypic representation (chromosome): 
-        <E, U, D, kA, σ_1, σ_2, σ_3, σ_4>.
-    
-    There are generally three ways of recombining two real-valued representations:
-    1. Essentially replacement of a value, but has the disadvantage of not introducing any new values. This is called a discrete recombination.
-    2. Essentially interpolate between the two values based on a value alpha. This is called intermediate recombination.
-    3. Third recombination operator generates a value close to one of the chosen parents, called blend recombination.
-
-    Elitism is performed by always including the frontier in the population.
-
-        
-"""
-
 import random
 import numpy as np
 import math 
@@ -180,7 +149,7 @@ class History:
         generation_vals = [data[2] for data in individ_data]
         fitness_data = np.array([data[1] for data in individ_data]) 
         plt.figure(figsize=(8, 6))
-        cmap = plt.get_cmap('tab10')  # Or 'tab20', 'Set3', etc
+        cmap = plt.get_cmap('tab10')
         colors = [cmap(i % cmap.N) for i in generation_vals] 
         plt.figure(figsize=(8, 6))
         plt.scatter(fitness_data[:, 0], fitness_data[:, 1], c=colors)
@@ -344,14 +313,6 @@ def select_survivors(population: Population):
             new_pop_list.extend(sort_by_crowding_distance(front)[:MU - len(new_pop_list)])
     return Population(new_pop_list)
 
-# I have the simple variation operators, now I need the sorting aspect, elitism, and survivor selection.
-# For survivor selection, it seems like tournament selection is used.
-# Parent selection will be in accordance to the non-dominating sorting.
-
-# I need the crowding distance thing during survivor selection.
-
-# It sort of seems like I am going to have to convert the FDS code to julia since it takes so long to run... Could also just use fewer individuals, but that is kind of wack.
-
 if __name__ == "__main__":
     hist = History()
     pop = Population(init_population(15)) # Initialization
@@ -378,5 +339,4 @@ if __name__ == "__main__":
 
     hist.plot_data()
 
-# Two things left: 1. Integrate variable bounds into the mutation step. 2. Add a plot of the history and such.
-# Discourage variable bound violations through objective penalty.
+# TODO: Discourage variable bound violations through objective penalty.
