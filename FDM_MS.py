@@ -138,7 +138,7 @@ def spatial_converge(params, M_list, K):
 
     BC = (i_ms, e_ms, d_ms, o_ms)
 
-    errors_Linf = np.zeros(len(M_list))
+    errors_L2 = np.zeros(len(M_list))
     H = np.zeros(len(M_list))
     ht = 1/K
     for j, M in enumerate(M_list):
@@ -156,12 +156,12 @@ def spatial_converge(params, M_list, K):
         C_exact = c_exact(RR, ZZ, t[-1])
         error = C_exact - Ck
 
-        errors_Linf[j] = np.max(np.abs(error))
+        errors_L2[j] = np.sqrt(np.sum(error**2) * h**2)
         H[j] = h
 
-    p = np.polyfit(np.log(H), np.log(errors_Linf), 1)[0]
+    p = np.polyfit(np.log(H), np.log(errors_L2), 1)[0]
 
-    return H, errors_Linf, p
+    return H, errors_L2, p
 
 
 def temporal_converge(params, K_list, M):
@@ -169,7 +169,7 @@ def temporal_converge(params, K_list, M):
 
     BC = (i_ms, e_ms, d_ms, o_ms)
 
-    errors_Linf = np.zeros(len(K_list))
+    errors_L2 = np.zeros(len(K_list))
     Ht = np.zeros(len(K_list))
     h = 1/M
     for j, K in enumerate(K_list):
@@ -187,13 +187,13 @@ def temporal_converge(params, K_list, M):
         C_exact = c_exact(RR, ZZ, t[-1])
         error = C_exact - Ck
 
-        errors_Linf[j] = np.max(np.abs(error))
+        errors_L2[j] = np.sqrt(np.sum(error**2) * h**2)
         Ht[j] = ht
         
 
-    p = np.polyfit(np.log(Ht), np.log(errors_Linf), 1)[0]
+    p = np.polyfit(np.log(Ht), np.log(errors_L2), 1)[0]
 
-    return Ht, errors_Linf, p
+    return Ht, errors_L2, p
 
 
 
