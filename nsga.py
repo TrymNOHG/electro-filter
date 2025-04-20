@@ -159,7 +159,7 @@ class History:
         plt.grid(True)
 
         for gen_val in np.unique(generation_vals):
-            plt.scatter([], [], c=[cmap(i % cmap.N)], label=f"Gen. {gen_val}")
+            plt.scatter([], [], c=[cmap(gen_val % cmap.N)], label=f"Gen. {gen_val}")
         plt.legend(title='Generation Number', bbox_to_anchor=(1.05, 1), loc='upper left')
 
         plt.tight_layout()
