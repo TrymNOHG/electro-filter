@@ -213,7 +213,6 @@ def plot_convergence(converge_func, params, resolution_list, fixed_resolution):
 
 # Example 1: Naive parameters, naive grid refinements
 R, L, E, U, D = 0.1, 1, 3, 4, 1
-
 plot_convergence(spatial_converge, (R, L, E, U, D), [50, 100, 200, 400], 400)
 plot_convergence(temporal_converge, (R, L, E, U, D), [50, 100, 200, 400], 400)
 
@@ -225,8 +224,8 @@ R, L, E, U, D = 3, 2, 9, 20, 0.0125 ## FIND PARAMETERS ##
 plot_convergence(temporal_converge, (R, L, E, U, D), [50, 100, 200, 400], 400)
 
 # Example 3: Optimized parameters, better grid refinements
-R, L, E, U, D = 0.1, 1, 3, 4, 1 ## FIND PARAMETERS ##
+R, L, E, U, D = 3, 2, 9, 20, 0.0125 ## FIND PARAMETERS ##
 plot_convergence(spatial_converge, (R, L, E, U, D), [200, 400, 800, 1600, 3200], 4000)
 
-R, L, E, U, D = 0.1, 1, 3, 4, 1 ## FIND PARAMETERS ##
+R, L, E, U, D = 3, 2, 9, 20, 0.0125 ## FIND PARAMETERS ##
 plot_convergence(temporal_converge, (R, L, E, U, D), [200, 400, 800, 1600, 3200], 4000)
