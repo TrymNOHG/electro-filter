@@ -3,6 +3,7 @@ import numpy as np
 import math 
 import uuid
 from copy import deepcopy
+import pickle
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -16,6 +17,12 @@ BOUNDS = [
     (1.0, 2.0),     # D
     (1.0, 5.0)      # kA
 ]
+
+def within_bounds(vars):
+    for i, var in enumerate(vars):
+        if var < BOUNDS[i][0] or var > BOUNDS[i][1]:
+            return False
+    return True
 
 R = 0.1
 L = 10*R
@@ -37,17 +44,19 @@ LAMBDA = 4
 ALPHA = 0.5 # For intermediate crossover
 
 # Example objective function
-def variance_objective(deposition_c):
+def variance_objective(deposition_c, feasible=True):
     """
         deposition_c - The concentration along the deposition wall.
     """
-    return np.var(deposition_c) 
+    variance = np.var(deposition_c)
+    return variance if feasible else variance * 100
 
-def deposition_objective(deposition_c):
+def deposition_objective(deposition_c, feasible=True):
     """
         deposition_c - The concentration along the deposition wall.
     """
-    return sum(deposition_c) 
+    depo_sum = sum(deposition_c) 
+    return depo_sum if feasible else depo_sum / 100
 
 OBJECTIVES = [
     variance_objective, 
@@ -58,7 +67,6 @@ FITNESS_EVAL = [
     lambda x, y: x < y, # Objective 1 is a minimization problem
     lambda x, y: x > y  # 2 is max.
 ]
-
 
 
 class Individual:
@@ -78,6 +86,7 @@ class Individual:
     
     def run_sim(self):
         E, U, D, kA = self.genotype[:4]
+        feasible = within_bounds(self.genotype[:4])
         Cwall = simulate_concentration(R, L, E, U, D, kA)
         final_profile = Cwall[-1, :]
         self.fitnesses = [
@@ -149,21 +158,26 @@ class History:
         generation_vals = [data[2] for data in individ_data]
         fitness_data = np.array([data[1] for data in individ_data]) 
         plt.figure(figsize=(8, 6))
-        cmap = plt.get_cmap('tab10')
+        cmap = plt.get_cmap('tab20')
         colors = [cmap(i % cmap.N) for i in generation_vals] 
         plt.figure(figsize=(8, 6))
         plt.scatter(fitness_data[:, 0], fitness_data[:, 1], c=colors)
         plt.xlabel('Variance Objective')
         plt.ylabel('Sum Deposition Objective')
+        plt.yscale('log')
         plt.title('NSGA-2 Population Development')
         plt.grid(True)
 
         for gen_val in np.unique(generation_vals):
-            plt.scatter([], [], c=[cmap(gen_val % cmap.N)], label=f"Gen. {gen_val}")
+            plt.scatter([], [], c=[cmap(gen_val % cmap.N)], label=f"{gen_val}")
         plt.legend(title='Generation Number', bbox_to_anchor=(1.05, 1), loc='upper left')
 
         plt.tight_layout()
         plt.savefig("./history.png")
+    
+    def save_data(self):
+        with open('individual_hist.pkl', 'wb') as f:
+            pickle.dump(self.individual_hist, f)
 
 
 def init_individual():
@@ -315,17 +329,17 @@ def select_survivors(population: Population):
 
 if __name__ == "__main__":
     hist = History()
-    pop = Population(init_population(15)) # Initialization
+    pop = Population(init_population(MU)) # Initialization
     hist.add_gen_data(pop)
     non_dom_sort(pop)
-    NUM_GENERATIONS = 2
-    for i in range(NUM_GENERATIONS):
+    NUM_GENERATIONS = 1
+    for _ in range(NUM_GENERATIONS):
         parents = tournament_selection(pop.population) # Parent Selection
         offspring = recombination(parents) # Offspring
         pop.add_individuals(offspring)
         
         mutated_individuals = []
-        for i, individual in enumerate(pop.population):
+        for individual in pop.population:
             mutated_individuals.append(real_mutate(individual))
         pop.add_individuals(mutated_individuals)
 
@@ -336,7 +350,7 @@ if __name__ == "__main__":
         print("Average Fitnesses | Best Fitnesses")
         print(pop.get_stats())
         hist.add_gen_data(pop)
+        print(len(pop.population))
 
     hist.plot_data()
-
-# TODO: Discourage variable bound violations through objective penalty.
+    hist.save_data()
