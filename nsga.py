@@ -294,7 +294,7 @@ def non_dom_sort(pop: Population):
             if i == j:
                 continue
             else:
-                does_dominate(individual, other_individual) # Use this to sort.
+                does_dominate(individual, other_individual)
 
     initial_front = []
     for individual in pop.population:
@@ -315,7 +315,7 @@ def sort_by_crowding_distance(front: list[Individual]):
         for j, individual in enumerate(front[1:-1]):
             individual.crowd_distance += (front[j+1].get_fitnesses()[i] - front[j-1].get_fitnesses()[i]) / (front[0].get_fitnesses()[i] - front[-1].get_fitnesses()[i])
     
-    return sorted(front, key=lambda x: x.crowd_distance, reverse=True) # Make sure this is ordered correctly
+    return sorted(front, key=lambda x: x.crowd_distance, reverse=True)
 
 def select_survivors(population: Population):
     fronts = non_dom_sort(population)
